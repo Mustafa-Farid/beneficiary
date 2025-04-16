@@ -1,0 +1,61 @@
+package com.enjaz.benefeciary.config;
+
+import com.enjaz.benefeciary.BeneficiaryExceptionHandling.BeneficiaryExceptionHandling;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+@Configuration
+public class SecurityConfig {
+    @Bean
+    public InMemoryUserDetailsManager userDetailsManager() {
+
+        UserDetails john = User.builder()
+                .username("ahmed")
+                .password("{noop}mostafa")
+                .roles("BENEFICIARY")
+                .build();
+
+        UserDetails mary = User.builder()
+                .username("mohamed")
+                .password("{noop}mostafa")
+                .roles("BENEFICIARY", "MANAGER")
+                .build();
+
+        UserDetails susan = User.builder()
+                .username("mostafa")
+                .password("{noop}mostafa")
+                .roles("BENEFICIARY", "MANAGER", "ADMIN")
+                .build();
+
+        return new InMemoryUserDetailsManager(john, mary, susan);
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http.authorizeHttpRequests(configurer ->
+                configurer
+                        .requestMatchers(HttpMethod.GET, "/api/beneficiaries").hasRole("BENEFICIARY")
+                        .requestMatchers(HttpMethod.GET, "/api/beneficiaries/**").hasRole("BENEFICIARY")
+                        .requestMatchers(HttpMethod.POST, "/api/beneficiaries").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/api/beneficiaries").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/beneficiaries/**").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/beneficiaries/**").hasRole("ADMIN")
+        );
+
+        // use HTTP Basic authentication
+        http.httpBasic(Customizer.withDefaults());
+
+        // disable Cross Site Request Forgery (CSRF)
+        // in general, not required for stateless REST APIs that use POST, PUT, DELETE and/or PATCH
+        http.csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+}
